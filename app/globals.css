@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(201, 162, 39, 0.08), transparent 45%),
+    radial-gradient(circle at 100% 100%, rgba(181, 101, 122, 0.10), transparent 50%);
+}
+
+/* Signature element: a stitched border, like thread binding a character card together */
+.stitched {
+  position: relative;
+  border: 1px solid rgba(246, 239, 227, 0.18);
+}
+.stitched::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(246, 239, 227, 0.14);
+  pointer-events: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #c9a227;
+  outline-offset: 2px;
+}
+
+/* Typing indicator: three dots bouncing in sequence */
+.typing-dot {
+  animation: typing-bounce 1.1s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Toast for provider-failover / connection notices */
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.toast-in {
+  animation: toast-in 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
