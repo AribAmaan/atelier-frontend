@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch, resolveMediaUrl } from "@/lib/api";
 import RequireAuth from "@/components/RequireAuth";
+import AppShell from "@/components/AppShell";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import CharacterImportPanel from "@/components/CharacterImportPanel";
 import { CharacterCardSkeleton } from "@/components/Skeleton";
 
 type Character = {
@@ -19,10 +21,8 @@ type Character = {
   lastMessageRole?: "user" | "assistant" | null;
   lastActivityAt?: string;
   isPublic?: boolean;
-  messageCount?: number;
 };
 
-/** Compact relative time for card timestamps ("Just now", "3h ago", "Tue"). */
 function relativeTime(iso?: string): string | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
@@ -39,9 +39,12 @@ function relativeTime(iso?: string): string | null {
 }
 
 const EMOJI_CHOICES = ["🌸", "🦊", "🌙", "⚔️", "🕯️", "🐉", "☕", "🌊"];
-// Mirrors MAX_FIELD_LENGTH in the backend's routes/characters.ts — kept in
-// sync here so the counter and the server's actual truncation point agree.
 const MAX_FIELD_LENGTH = 1200;
+
+function slugifyAvatar(name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `/assets/characters/${slug}.png`;
+}
 
 const STARTER_TEMPLATES = [
   {
@@ -93,6 +96,13 @@ export default function DashboardPage() {
   const [backstory, setBackstory] = useState("");
   const [greeting, setGreeting] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("🌸");
+  const [isExplicit, setIsExplicit] = useState(false);
+  const [roleplayNotes, setRoleplayNotes] = useState("");
+  const [avatarPrompt, setAvatarPrompt] = useState("");
+  const [scenePromptTemplate, setScenePromptTemplate] = useState("");
+  const [examples, setExamples] = useState("[]");
+  const [tags, setTags] = useState("[]");
+  const [draftExplicit, setDraftExplicit] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
@@ -111,9 +121,17 @@ export default function DashboardPage() {
   }, []);
 
   async function loadCharacters() {
-    const res = await apiFetch("/api/characters");
-    const data = await res.json();
-    setCharacters(data.characters ?? []);
+    try {
+      const res = await apiFetch("/api/characters");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCharacters(data.characters ?? []);
+      } else {
+        setError(data.error || "Couldn't load characters.");
+      }
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    }
   }
 
   async function onUseTemplate(template: (typeof STARTER_TEMPLATES)[number]) {
@@ -145,20 +163,20 @@ export default function DashboardPage() {
     try {
       const res = await apiFetch("/api/characters/draft", {
         method: "POST",
-        body: JSON.stringify({ idea: idea.trim() }),
+        body: JSON.stringify({ idea: idea.trim(), allowExplicit: draftExplicit }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.draft) {
         setDraftError(data.error || "Couldn't draft a character right now.");
         return;
       }
-      // Pre-fill the full form so the user reviews/edits before creating —
-      // this never creates the character directly.
       setName(data.draft.name);
       setTagline(data.draft.tagline);
       setPersonality(data.draft.personality);
       setBackstory(data.draft.backstory);
       setGreeting(data.draft.greeting);
+      if (typeof data.draft.roleplayNotes === "string") setRoleplayNotes(data.draft.roleplayNotes);
+      setIsExplicit(draftExplicit);
       setShowForm(true);
       setIdea("");
       requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -173,24 +191,52 @@ export default function DashboardPage() {
     e.preventDefault();
     setError("");
     setSaving(true);
-    const res = await apiFetch("/api/characters", {
-      method: "POST",
-      body: JSON.stringify({ name, tagline, personality, backstory, greeting, avatarEmoji }),
-    });
-    setSaving(false);
-    if (!res.ok) {
+    try {
+      const res = await apiFetch("/api/characters", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          tagline,
+          personality,
+          backstory,
+          greeting,
+          avatarEmoji,
+          isExplicit,
+          roleplayNotes: isExplicit ? roleplayNotes : "",
+          avatarPrompt,
+          scenePromptTemplate,
+          examples,
+          tags,
+        }),
+      });
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Couldn't create that character.");
-      return;
+      if (!res.ok) {
+        setError(data.error || "Couldn't create that character.");
+        return;
+      }
+      setName("");
+      setTagline("");
+      setPersonality("");
+      setBackstory("");
+      setGreeting("");
+      setAvatarEmoji("🌸");
+      setIsExplicit(false);
+      setRoleplayNotes("");
+      setAvatarPrompt("");
+      setScenePromptTemplate("");
+      setExamples("[]");
+      setTags("[]");
+      setShowForm(false);
+      if (data.character?.id) {
+        router.push(`/characters/${data.character.id}/edit`);
+      } else {
+        loadCharacters();
+      }
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    setName("");
-    setTagline("");
-    setPersonality("");
-    setBackstory("");
-    setGreeting("");
-    setAvatarEmoji("🌸");
-    setShowForm(false);
-    loadCharacters();
   }
 
   async function onDelete(id: string) {
@@ -209,69 +255,81 @@ export default function DashboardPage() {
     }
   }
 
-  async function logout() {
-    await apiFetch("/api/auth/logout", { method: "POST" });
-    router.push("/");
-    router.refresh();
-  }
-
   return (
     <RequireAuth>
-    <main className="min-h-screen px-6 py-8 md:px-12">
-      <header className="flex items-center justify-between mb-10">
+    <AppShell>
+    <main className="flex-1 overflow-y-auto px-4 md:px-10 py-8">
+      <header className="flex flex-wrap items-center justify-between gap-4 mb-10">
         <div>
-          <p className="text-sm text-parchment/60">Welcome back{displayName ? `, ${displayName}` : ""}</p>
-          <h1 className="font-display text-3xl">Your characters</h1>
+          <p className="text-xs text-parchment/50 uppercase tracking-widest mb-1">Studio</p>
+          <h1 className="font-display text-3xl gradient-text">Your characters</h1>
+          <p className="text-sm text-parchment/45 mt-1">Welcome back{displayName ? `, ${displayName}` : ""}</p>
         </div>
         <div className="flex gap-3">
           <Link
-            href="/discover"
-            className="border border-parchment/30 px-4 py-2 rounded-full hover:border-gold focus-ring flex items-center"
+            href="/explore"
+            className="border border-white/15 px-4 py-2 rounded-full hover:border-gold focus-ring flex items-center text-sm transition-all hover:bg-white/5"
           >
-            Discover
+            Explore
           </Link>
           <button
             onClick={() => setShowForm((s) => !s)}
-            className="bg-gold text-ink px-5 py-2 rounded-full font-medium hover:brightness-110 focus-ring"
+            className="bg-gold text-ink px-5 py-2 rounded-full font-medium hover:brightness-110 focus-ring btn-shine shadow-lg shadow-gold/15"
           >
             {showForm ? "Cancel" : "+ New character"}
-          </button>
-          <button onClick={logout} className="border border-parchment/30 px-4 py-2 rounded-full hover:border-gold focus-ring">
-            Log out
           </button>
         </div>
       </header>
 
-      <div className="stitched rounded-2xl bg-gradient-to-br from-gold/10 to-plum/60 p-6 mb-8 max-w-2xl">
-        <p className="font-display text-lg mb-1">✨ Quick start</p>
-        <p className="text-sm text-parchment/60 mb-4">
-          Describe a character idea in one sentence — we'll draft their personality, backstory, and greeting for you
-          to review and tweak.
-        </p>
-        <form onSubmit={onDraft} className="flex flex-col sm:flex-row gap-2">
-          <input
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            placeholder="e.g. a grumpy retired sea captain who runs a bookshop now"
-            className="flex-1 rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
-            maxLength={300}
-          />
-          <button
-            type="submit"
-            disabled={drafting || !idea.trim()}
-            className="bg-gold text-ink px-5 py-2 rounded-full font-medium hover:brightness-110 focus-ring disabled:opacity-50 shrink-0"
-          >
-            {drafting ? "Drafting…" : "Draft it"}
-          </button>
-        </form>
-        {draftError && <p className="mt-3 text-sm text-rose">{draftError}</p>}
+      <div className="gradient-border rounded-2xl bg-gradient-to-br from-gold/10 to-plum/60 p-6 mb-8 max-w-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.04]">
+          <div className="w-full h-full rounded-full bg-gold" style={{ filter: "blur(40px)" }} />
+        </div>
+        <div className="relative z-10">
+          <p className="font-display text-lg mb-1">✨ Quick start</p>
+          <p className="text-sm text-parchment/60 mb-4">
+            Describe a character idea in one sentence — we'll draft their personality, backstory, and greeting for you
+            to review and tweak.
+          </p>
+          <form onSubmit={onDraft} className="flex flex-col sm:flex-row gap-2">
+            <input
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              placeholder="e.g. a grumpy retired sea captain who runs a bookshop now"
+              className="flex-1 rounded-xl bg-plum-deep/80 border border-parchment/15 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
+              maxLength={300}
+            />
+            <button
+              type="submit"
+              disabled={drafting || !idea.trim()}
+              className="bg-gold text-ink px-5 py-2.5 rounded-full font-medium hover:brightness-110 focus-ring disabled:opacity-50 shrink-0 btn-shine"
+            >
+              {drafting ? "Drafting…" : "Draft it"}
+            </button>
+          </form>
+          <label className="mt-3 flex items-center gap-2 text-sm text-parchment/60 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={draftExplicit}
+              onChange={(e) => setDraftExplicit(e.target.checked)}
+              className="w-4 h-4 rounded accent-rose cursor-pointer"
+            />
+            <span className="group-hover:text-parchment/80 transition-colors">Draft as explicit/NSFW character</span>
+          </label>
+          {draftError && <p className="mt-3 text-sm text-rose">{draftError}</p>}
+        </div>
       </div>
 
+      <CharacterImportPanel onImported={loadCharacters} />
+
       {showForm && (
-        <form ref={formRef} onSubmit={onCreate} className="stitched rounded-2xl bg-plum/60 p-8 mb-10 max-w-2xl">
-          <h2 className="font-display text-xl mb-4">Craft a new character</h2>
+        <form ref={formRef} onSubmit={onCreate} className="gradient-border rounded-2xl bg-gradient-to-br from-plum/60 to-plum-deep/80 p-8 mb-10 max-w-2xl">
+          <h2 className="font-display text-xl mb-1 gradient-text">Craft a new character</h2>
+          <p className="text-xs text-parchment/50 mb-4">
+            Pick an emoji for now — you'll be able to upload or AI-generate a portrait right after creating.
+          </p>
           {error && (
-            <p className="mb-4 text-sm text-rose bg-rose/10 border border-rose/30 rounded px-3 py-2">{error}</p>
+            <p className="mb-4 text-sm text-rose bg-rose/10 border border-rose/30 rounded-lg px-3 py-2">{error}</p>
           )}
 
           <div className="flex gap-2 mb-4">
@@ -280,8 +338,8 @@ export default function DashboardPage() {
                 type="button"
                 key={emoji}
                 onClick={() => setAvatarEmoji(emoji)}
-                className={`text-2xl rounded-lg p-2 focus-ring ${
-                  avatarEmoji === emoji ? "bg-gold/20 ring-1 ring-gold" : "hover:bg-parchment/5"
+                className={`text-2xl rounded-xl p-2.5 focus-ring transition-all ${
+                  avatarEmoji === emoji ? "bg-gold/20 ring-1 ring-gold shadow-lg shadow-gold/10" : "hover:bg-parchment/5"
                 }`}
               >
                 {emoji}
@@ -289,65 +347,136 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <label className="block text-sm mb-1 text-parchment/70">Name</label>
+          <label className="block text-sm mb-1.5 text-parchment/60">Name</label>
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full mb-4 rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+            className="w-full mb-4 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
             placeholder="e.g. Wren"
           />
 
-          <label className="block text-sm mb-1 text-parchment/70">Tagline</label>
+          <label className="block text-sm mb-1.5 text-parchment/60">Tagline</label>
           <input
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
-            className="w-full mb-4 rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+            className="w-full mb-4 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
             placeholder="e.g. a lighthouse keeper who talks to storms"
           />
 
-          <label className="block text-sm mb-1 text-parchment/70">Personality traits</label>
+          <label className="block text-sm mb-1.5 text-parchment/60">Personality traits</label>
           <textarea
             required
             value={personality}
             onChange={(e) => setPersonality(e.target.value)}
             rows={2}
             maxLength={MAX_FIELD_LENGTH}
-            className="w-full rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+            className="w-full rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
             placeholder="e.g. dry humor, fiercely loyal, terrible at small talk"
           />
-          <p className="text-right text-xs text-parchment/40 mb-4">
-            {personality.length}/{MAX_FIELD_LENGTH}
-          </p>
+          <p className="text-right text-xs text-parchment/40 mb-4">{personality.length}/{MAX_FIELD_LENGTH}</p>
 
-          <label className="block text-sm mb-1 text-parchment/70">Backstory</label>
+          <label className="block text-sm mb-1.5 text-parchment/60">Backstory</label>
           <textarea
             required
             value={backstory}
             onChange={(e) => setBackstory(e.target.value)}
             rows={4}
             maxLength={MAX_FIELD_LENGTH}
-            className="w-full rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+            className="w-full rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
             placeholder="What's their history? What do they want? What do they avoid talking about?"
           />
-          <p className="text-right text-xs text-parchment/40 mb-4">
-            {backstory.length}/{MAX_FIELD_LENGTH}
-          </p>
+          <p className="text-right text-xs text-parchment/40 mb-4">{backstory.length}/{MAX_FIELD_LENGTH}</p>
 
-          <label className="block text-sm mb-1 text-parchment/70">Opening greeting</label>
+          <label className="block text-sm mb-1.5 text-parchment/60">Opening greeting</label>
           <textarea
             required
             value={greeting}
             onChange={(e) => setGreeting(e.target.value)}
             rows={2}
-            className="w-full mb-6 rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+            className="w-full mb-4 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring placeholder:text-parchment/25"
             placeholder="The first line they say when a chat opens"
+          />
+
+          <label className="flex items-center gap-2 mb-4 text-sm text-parchment/60 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={isExplicit}
+              onChange={(e) => {
+                setIsExplicit(e.target.checked);
+                if (!e.target.checked) setRoleplayNotes("");
+              }}
+              className="w-4 h-4 rounded accent-rose cursor-pointer"
+            />
+            <span className="group-hover:text-parchment/80 transition-colors">Mark as explicit/NSFW character (enables mature avatar generation styling)</span>
+          </label>
+
+          {isExplicit && (
+            <>
+              <label className="block text-sm mb-1.5 text-parchment/60">Roleplay notes (optional)</label>
+              <textarea
+                value={roleplayNotes}
+                onChange={(e) => setRoleplayNotes(e.target.value.slice(0, MAX_FIELD_LENGTH))}
+                rows={3}
+                className="w-full mb-2 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring text-sm placeholder:text-parchment/25"
+                placeholder="Scenario hooks, seduction style, soft boundaries — injected into spicy chats only."
+              />
+              <p className="text-xs text-parchment/40 mb-6">Private to your account. Used when explicit mode is on in chat.</p>
+            </>
+          )}
+
+          {!isExplicit && <div className="mb-6" />}
+
+          <label className="block text-sm mb-1.5 text-parchment/60">Appearance description (optional)</label>
+          <textarea
+            value={avatarPrompt}
+            onChange={(e) => setAvatarPrompt(e.target.value.slice(0, MAX_FIELD_LENGTH))}
+            rows={3}
+            className="w-full mb-2 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring text-sm placeholder:text-parchment/25"
+            placeholder="e.g. mid-20s woman, sharp jawline, silver bob haircut, emerald eyes, worn leather jacket..."
+          />
+          <p className="text-xs text-parchment/40 mb-4">
+            Used as the primary prompt for their avatar, background, and every in-chat scene image, so they stay
+            visually consistent. Leave blank to fall back to personality/tagline.
+          </p>
+
+          <label className="block text-sm mb-1.5 text-parchment/60">Art style / setting (optional)</label>
+          <textarea
+            value={scenePromptTemplate}
+            onChange={(e) => setScenePromptTemplate(e.target.value.slice(0, MAX_FIELD_LENGTH))}
+            rows={2}
+            className="w-full mb-2 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring text-sm placeholder:text-parchment/25"
+            placeholder="e.g. moody film noir lighting, rain-slicked city streets, muted color palette..."
+          />
+
+          <label className="block text-sm mb-1.5 text-parchment/60">Example dialogues (optional)</label>
+          <p className="text-xs text-parchment/40 mb-2">
+            Teach the character how they speak — up to 10 example conversation turns.
+          </p>
+          <textarea
+            value={examples}
+            onChange={(e) => setExamples(e.target.value)}
+            rows={6}
+            className="w-full mb-2 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring text-sm font-mono placeholder:text-parchment/25"
+            placeholder={`[` +
+              `\n  { "user": "Hi there!", "character": "Hey! *waves energetically*" },` +
+              `\n  { "user": "How are you?", "character": "Living the dream, one coffee at a time." }` +
+              `\n]`
+            }
+          />
+
+          <label className="block text-sm mb-1.5 text-parchment/60">Tags (optional, comma-separated)</label>
+          <input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="w-full mb-6 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring text-sm placeholder:text-parchment/25"
+            placeholder="e.g. fantasy, romance, adventure, comedy"
           />
 
           <button
             type="submit"
             disabled={saving}
-            className="bg-gold text-ink px-6 py-2.5 rounded-full font-medium hover:brightness-110 focus-ring disabled:opacity-60"
+            className="bg-gold text-ink px-6 py-2.5 rounded-full font-medium hover:brightness-110 focus-ring disabled:opacity-60 btn-shine shadow-lg shadow-gold/20"
           >
             {saving ? "Creating…" : "Create character"}
           </button>
@@ -355,7 +484,7 @@ export default function DashboardPage() {
       )}
 
       {characters === null && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <CharacterCardSkeleton key={i} />
           ))}
@@ -364,37 +493,38 @@ export default function DashboardPage() {
 
       {characters !== null && characters.length === 0 && !showForm && (
         <div className="max-w-2xl">
-          <div className="stitched rounded-2xl bg-plum/60 p-8 mb-6 text-center">
+          <div className="gradient-border rounded-2xl bg-gradient-to-br from-plum/60 to-plum-deep/80 p-8 mb-6 text-center">
+            <span className="text-4xl block mb-3 opacity-70">🎭</span>
             <p className="font-display text-xl mb-2">No characters yet</p>
             <p className="text-sm text-parchment/60 mb-6">
               Create your own, or jump straight into a chat with one of these.
             </p>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-gold text-ink px-5 py-2 rounded-full font-medium hover:brightness-110 focus-ring"
+              className="bg-gold text-ink px-5 py-2 rounded-full font-medium hover:brightness-110 focus-ring btn-shine"
             >
               + New character
             </button>
           </div>
 
-          <p className="text-sm text-parchment/50 mb-3">Or try one of these</p>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <p className="text-sm text-parchment/50 mb-3 font-display">Or try one of these</p>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             {STARTER_TEMPLATES.map((t) => (
               <button
                 key={t.name}
                 onClick={() => onUseTemplate(t)}
                 disabled={creatingTemplate !== null}
-                className="stitched rounded-2xl bg-plum/60 p-5 text-left hover:border-gold/40 focus-ring disabled:opacity-50 transition-colors"
+                className="gradient-border rounded-2xl bg-gradient-to-br from-plum/60 to-plum-deep/80 p-5 text-left hover:border-gold/40 focus-ring disabled:opacity-50 transition-all card-hover"
               >
                 <span
-                  className="text-2xl w-11 h-11 flex items-center justify-center rounded-full mb-3"
+                  className="text-2xl w-11 h-11 flex items-center justify-center rounded-full mb-3 shadow-lg"
                   style={{ backgroundColor: `${t.accentColor}30` }}
                 >
                   {t.avatarEmoji}
                 </span>
                 <p className="font-display text-lg">{t.name}</p>
                 <p className="text-xs text-parchment/60 mb-2">{t.tagline}</p>
-                <p className="text-xs text-gold">
+                <p className="text-xs text-gold font-medium">
                   {creatingTemplate === t.name ? "Starting chat…" : "Start chatting →"}
                 </p>
               </button>
@@ -403,67 +533,62 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {characters?.map((c) => {
           const preview = c.lastMessagePreview?.trim();
           const when = relativeTime(c.lastActivityAt);
           return (
-            <div key={c.id} className="stitched rounded-2xl bg-plum/60 p-6 flex flex-col">
+            <div key={c.id} className="gradient-border rounded-2xl bg-gradient-to-br from-plum/60 to-plum-deep/80 p-6 flex flex-col card-hover">
               <div className="flex items-center gap-3 mb-3">
                 <span
-                  className="text-2xl w-12 h-12 flex items-center justify-center rounded-full overflow-hidden shrink-0"
+                  className="relative text-2xl w-12 h-12 flex items-center justify-center rounded-full overflow-hidden shrink-0 shadow-lg ring-1 ring-white/5"
                   style={{ backgroundColor: `${c.accentColor}30` }}
                 >
-                  {c.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={resolveMediaUrl(c.avatarUrl)} alt={c.name} className="w-full h-full object-cover" />
-                  ) : (
-                    c.avatarEmoji
-                  )}
+                  <span className="text-2xl">{c.avatarEmoji}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={c.avatarUrl ? resolveMediaUrl(c.avatarUrl) : slugifyAvatar(c.name)}
+                    alt={c.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-display text-lg truncate">{c.name}</p>
                     {when && <p className="text-[11px] text-parchment/40 shrink-0">{when}</p>}
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {c.isPublic && (
-                      <span className="inline-block text-[10px] text-gold/80 border border-gold/30 rounded-full px-2 py-0.5 mt-0.5">
-                        Shared
-                      </span>
-                    )}
-                    {!!c.messageCount && (
-                      <span className="inline-block text-[10px] text-parchment/50 border border-parchment/15 rounded-full px-2 py-0.5 mt-0.5">
-                        💬 {c.messageCount}
-                      </span>
-                    )}
-                  </div>
+                  {c.isPublic && (
+                    <span className="inline-block text-[10px] text-gold/80 border border-gold/30 rounded-full px-2 py-0.5 mt-0.5">
+                      Shared
+                    </span>
+                  )}
                   {c.tagline && <p className="text-xs text-parchment/60 truncate">{c.tagline}</p>}
                 </div>
               </div>
               {preview && (
-                <p className="text-xs text-parchment/50 line-clamp-2 mb-2">
+                <p className="text-xs text-parchment/50 line-clamp-2 mb-2 leading-relaxed">
                   {c.lastMessageRole === "user" ? "You: " : ""}
                   {preview}
                 </p>
               )}
-              <div className="mt-auto flex gap-2 pt-4">
+              <div className="mt-auto flex gap-2 pt-4 border-t border-white/5">
                 <Link
                   href={`/chat/${c.id}`}
-                  className="flex-1 text-center bg-gold text-ink py-2 rounded-full font-medium hover:brightness-110 focus-ring"
+                  className="flex-1 text-center bg-gold text-ink py-2 rounded-full font-medium hover:brightness-110 focus-ring btn-shine text-sm"
                 >
                   Chat
                 </Link>
                 <Link
                   href={`/characters/${c.id}/edit`}
-                  className="px-3 rounded-full border border-parchment/20 hover:border-gold focus-ring flex items-center"
+                  className="px-3 rounded-full border border-parchment/20 hover:border-gold focus-ring flex items-center transition-all hover:bg-white/5"
                   aria-label={`Edit ${c.name}`}
                 >
                   ✎
                 </Link>
                 <button
                   onClick={() => onDelete(c.id)}
-                  className="px-3 rounded-full border border-parchment/20 hover:border-rose hover:text-rose focus-ring"
+                  className="px-3 rounded-full border border-parchment/20 hover:border-rose hover:text-rose focus-ring transition-all hover:bg-rose/5"
                   aria-label={`Delete ${c.name}`}
                 >
                   ✕
@@ -484,6 +609,7 @@ export default function DashboardPage() {
         onCancel={() => setPendingDeleteId(null)}
       />
     </main>
+    </AppShell>
     </RequireAuth>
   );
 }

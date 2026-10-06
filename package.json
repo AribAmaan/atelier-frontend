@@ -1,5 +1,5 @@
 {
-  "name": "atelier-frontend",
+  "name": "rolichat-frontend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -8,15 +8,21 @@
     "start": "next start"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/postprocessing": "^3.1.1",
     "next": "^15.5.9",
-    "react": "^19.0.3",
-    "react-dom": "^19.0.3"
+    "postprocessing": "^6.39.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.9.4",
     "@types/node": "^20.14.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.185.4",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",

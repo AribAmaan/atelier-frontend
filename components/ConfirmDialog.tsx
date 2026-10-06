@@ -42,7 +42,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-6"
+      className="rp-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-6"
       role="presentation"
       onClick={onCancel}
     >
@@ -51,7 +51,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         onClick={(e) => e.stopPropagation()}
-        className="stitched w-full max-w-sm rounded-2xl bg-plum-deep border border-parchment/20 p-6 shadow-2xl toast-in"
+        className="rp-compact-dialog stitched w-full max-w-sm rounded-2xl bg-plum-deep border border-parchment/20 p-6 shadow-2xl toast-in"
       >
         <p id="confirm-dialog-title" className="font-display text-lg mb-2">
           {title}

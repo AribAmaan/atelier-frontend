@@ -1,0 +1,179 @@
+/* Responsive layout fixes. Content must fit its track, not expand the viewport. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.rp-shell-content, .rp-discover, .rp-discover > div,
+.rp-recent-section, .rp-recent-grid, .rp-recent-card,
+.rp-cast-grid > *, .rp-discover-heading > div, .rp-discover-banner > div:first-child {
+  min-width: 0;
+}
+.rp-recent-card { width: 100%; max-width: 100%; }
+.rp-recent-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-recent-card > span:last-child { flex-shrink: 0; }
+.rp-discover-heading h1, .rp-row-title h2 { overflow-wrap: anywhere; }
+.rp-row-title h2 { min-width: 0; }
+.rp-row-title > a, .rp-row-title > span { flex-shrink: 0; }
+.rp-banner-art { flex-shrink: 0; }
+
+/* A single scrollable transcript, with header and composer outside it. */
+.rp-app-shell[data-chat=true] { height: var(--chat-height, 100dvh); min-height: 0; }
+.rp-app-shell[data-chat=true] > .rp-shell-content,
+.rp-app-shell[data-chat=true] > aside { height: 100%; min-height: 0; }
+.rp-chat { min-width: 0; overflow: hidden; }
+.rp-chat-identity { flex: 1; }
+.rp-chat-error { flex-shrink: 0; overflow-wrap: anywhere; }
+.rp-transcript { overflow-anchor: none; }
+.rp-message-bubble, .rp-message-editor { min-width: 0; overflow-wrap: anywhere; }
+.rp-message-bubble code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rp-message-editor { width: 100%; }
+.rp-message-editor textarea { min-height: 96px; font-size: 16px; line-height: 1.6; }
+.rp-message-editor > div { flex-wrap: wrap; }
+.rp-message-editor button { min-height: 40px; color: #f6efe3; }
+.rp-message-options { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 36px; }
+.message-menu button { min-height: 40px; }
+.rp-chat-shortcuts { flex-shrink: 0; }
+.rp-chat-shortcuts .quick-actions-bar { flex-wrap: wrap; border-radius: 14px; max-height: 120px; overflow-y: auto; margin: 0; }
+.rp-chat-shortcuts .quick-action-btn, .rp-chat-shortcuts .scenario-action-btn { min-height: 40px; }
+
+/* The writing area owns the whole row. Tools cannot take away its width. */
+.rp-composer { display: flex; flex-direction: column; align-items: stretch; gap: 8px; flex-shrink: 0; padding: 12px 24px 6px; border-top: 1px solid #ffffff16; background: #18141e; }
+.rp-composer-input { width: 100%; min-width: 0; }
+.rp-composer .rp-message-input { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 76px; max-height: 200px; padding: 12px 14px; border: 1px solid #ffffff26; border-radius: 14px; resize: none; transition: border-color .2s, box-shadow .2s; font-size: 16px; line-height: 1.5; color: #f6efe3; background: #231c2d; scrollbar-width: thin; }
+.rp-composer .rp-message-input::placeholder { color: #b1a3bd; }
+.rp-composer-controls { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.rp-composer-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 13px; }
+.rp-composer-controls button[aria-expanded=true] { background: #b8a7df22; color: #f6efe3; }
+.rp-composer-controls .rp-send-button { margin-left: auto; min-width: 78px; flex-shrink: 0; padding-inline: 18px; font-weight: 600; }
+.rp-composer-note { font-size: 10px; line-height: 1.5; padding: 2px 24px max(8px, env(safe-area-inset-bottom)); flex-shrink: 0; }
+.rp-chat .scroll-jump-btn { bottom: 190px; z-index: 20; min-height: 40px; }
+.rp-chat-search { flex-wrap: wrap; }
+.rp-chat-search input { min-width: 120px; min-height: 44px; font-size: 16px; }
+.rp-chat-search button { min-height: 40px; }
+.rp-chat-toolbar { overflow-x: auto; scrollbar-width: thin; }
+.rp-chat-toolbar button { min-height: 40px; flex-shrink: 0; }
+.rp-dialog { overscroll-behavior: contain; }
+.rp-dialog-heading > div { min-width: 0; }
+.rp-dialog .rp-icon-button { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+.rp-dialog-footer { flex-wrap: wrap; }
+
+@media (max-width: 767px) {
+  .rp-app-shell[data-chat=true] { position: fixed; top: var(--chat-top, 0px); inset-inline: 0; width: 100%; padding-top: env(safe-area-inset-top); }
+  .rp-app-shell[data-chat=false] > .rp-shell-content { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .rp-app-shell[data-chat=false] > .rp-shell-content > header { padding-top: max(12px, env(safe-area-inset-top)); }
+  .rp-app-shell[data-chat=false] > .rp-shell-content > header button { min-width: 44px; min-height: 44px; }
+  .rp-mobile-nav { background: #19141f; min-height: 68px; }
+  .rp-mobile-nav a { min-height: 48px; font-size: 11px; }
+  .rp-mobile-nav a span { font-size: 20px; }
+  .rp-discover { padding-bottom: 16px; }
+  .rp-discover-heading { padding: 4px 0 20px; gap: 16px; }
+  .rp-discover-heading h1 { font-size: clamp(28px, 8vw, 36px); line-height: 1.16; letter-spacing: -1px; }
+  .rp-discover-heading > div > p:last-child { font-size: 13px; line-height: 1.65; }
+  .rp-discover-heading > .rp-button { min-height: 44px; font-size: 12px; }
+  .rp-recent-grid { grid-template-columns: minmax(0, 1fr); }
+  .rp-row-title { align-items: flex-start; gap: 12px; }
+  .rp-row-title h2 { flex: 1; font-size: 18px; line-height: 1.4; }
+  .rp-row-title > a, .rp-row-title > span { max-width: 38%; font-size: 11px; line-height: 1.6; }
+  .rp-recent-card { padding: 12px; }
+  .rp-recent-card strong { font-size: 14px; }
+  .rp-recent-card p { font-size: 12px; }
+  .rp-discover-banner { gap: 12px; padding: 20px; margin-block: 20px; }
+  .rp-discover-banner h2 { font-size: clamp(21px, 6vw, 27px); line-height: 1.2; }
+  .rp-banner-art { width: 46px; font-size: 48px; }
+  .rp-banner-art span { right: 0; top: -18px; font-size: 24px; }
+  .rp-discover input[type=search] { font-size: 16px; min-height: 44px; }
+  .rp-explore-card { contain-intrinsic-size: auto 340px; }
+  .rp-explore-card button.bg-gold { min-height: 44px; font-size: 12px; padding-inline: 6px; }
+  .rp-save-button { width: 44px; height: 44px; top: 0; right: 0; }
+  .rp-explore-card h3 { padding-right: 34px; }
+
+  .rp-chat > header { padding: 6px 10px; }
+  .rp-header-back, .rp-chat .chat-menu > button { min-width: 44px; min-height: 44px; }
+  .rp-chat-identity > div:last-child { min-width: 0; }
+  .rp-chat-identity p { font-size: 17px; }
+  .rp-chat-toolbar { gap: 2px; padding: 3px 8px; }
+  .rp-chat-toolbar button { padding-inline: 9px; font-size: 11px; min-height: 40px; }
+  .rp-transcript { padding: 16px 12px; scroll-padding-bottom: 16px; }
+  .rp-message { gap: 0; padding-block: 2px; }
+  .rp-message > div:first-child { display: none; }
+  .rp-message-content { width: 100%; }
+  .rp-message-bubble, .rp-message-editor, .rp-transcript > .chat-bubble-assistant { max-width: 100%; font-size: 16px; line-height: 1.65; padding: 12px 14px; }
+  .rp-chat .chat-bubble-assistant { line-height: 1.65; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .rp-message[data-role=user] .rp-message-bubble { max-width: 92%; }
+  .rp-message-actions { opacity: 1; margin-top: 0; }
+  .rp-message-options { min-width: 44px; min-height: 44px; border: 1px solid #ffffff16; margin-top: 4px; border-radius: 10px; }
+  .rp-reactions { gap: 6px; }
+  .rp-reactions .reaction-btn { min-width: 40px; min-height: 36px; justify-content: center; font-size: 14px; }
+  .rp-composer { padding: 10px 12px 4px; gap: 6px; }
+  .rp-composer .rp-message-input { min-height: 80px; font-size: 16px; }
+  .rp-composer-note { padding-inline: 14px; font-size: 10px; }
+  .rp-composer-note > span { display: none; }
+  .rp-chat-search { padding: 8px 12px; }
+  .rp-chat-shortcuts { padding: 6px 12px; }
+  .rp-chat-error { font-size: 12px; line-height: 1.5; padding: 8px 12px; }
+  .rp-app-shell[data-compact=true] .rp-composer .rp-message-input { min-height: 60px; }
+  .rp-app-shell[data-compact=true] .rp-composer-note { display: none; }
+  .rp-app-shell[data-compact=true] .rp-chat-shortcuts .quick-actions-bar { max-height: 80px; }
+
+  .rp-nav { flex-wrap: wrap; padding-top: max(18px, env(safe-area-inset-top)); }
+  .rp-nav nav { gap: 14px; }
+  .rp-nav nav > a { min-height: 44px; display: inline-flex; align-items: center; }
+  .rp-nav nav > .rp-nav-discover { display: none; }
+  .rp-hero { min-height: 0; padding-top: 32px; padding-bottom: 48px; gap: 20px; }
+  .rp-hero-copy { min-width: 0; }
+  .rp-hero h1 { font-size: clamp(42px, 11.6vw, 68px); letter-spacing: -2px; }
+  .rp-hero-actions { gap: 16px; flex-wrap: wrap; }
+  .rp-hero-art { width: 100%; height: clamp(290px, 94vw, 400px); }
+  .rp-portrait-main { width: 56%; left: 22%; height: 82%; top: 6%; }
+  .rp-portrait-left { left: 0; top: 13%; }
+  .rp-portrait-right { right: 0; top: 10%; }
+  .rp-portrait-left > span, .rp-portrait-right > span { display: none; }
+  .rp-portrait-caption { left: 14px; right: 10px; bottom: 22px; }
+  .rp-portrait-caption small { font-size: 8px; letter-spacing: .8px; }
+  .rp-portrait-caption strong { font-size: clamp(20px, 5.6vw, 27px); line-height: 1.15; margin-block: 5px; }
+  .rp-portrait-caption > span { display: block; font-size: 10px; line-height: 1.4; }
+  .rp-floating-line { left: 3%; bottom: -4px; max-width: 94%; padding: 12px 16px; font-size: clamp(14px, 4vw, 18px); }
+  .rp-floating-line small { padding-left: 0; font-size: 10px; line-height: 1.5; }
+  .rp-art-star { top: -8px; font-size: 40px; }
+  .rp-marquee { flex-wrap: wrap; white-space: normal; justify-content: center; gap: 12px 20px; padding: 18px; font-size: 9px; letter-spacing: 1.4px; }
+  .rp-marquee i { display: none; }
+  .rp-section { padding-block: 38px; }
+  .rp-section h2 { font-size: clamp(28px, 8vw, 38px); letter-spacing: -.9px; }
+  .rp-section-heading { margin-bottom: 22px; }
+  .rp-cast-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rp-cast-card h3 { font-size: clamp(17px, 5vw, 21px); overflow-wrap: anywhere; }
+  .rp-story-preview { min-width: 0; padding: 18px; }
+  .rp-preview-answer { margin-left: 16px; }
+  .rp-field input, .rp-field textarea, .rp-field select,
+  .rp-app-shell input:not([type=checkbox]):not([type=radio]):not([type=range]),
+  .rp-app-shell textarea, .rp-app-shell select { font-size: 16px; }
+  .rp-dialog { max-height: min(calc(100dvh - 24px), calc(var(--chat-height, 100dvh) - 24px)); padding: 20px; }
+  .rp-dialog h2 { font-size: 28px; }
+  .rp-dialog-footer { position: sticky; bottom: -20px; background: #1b1722; padding: 14px 0; margin-top: 14px; border-top: 1px solid #ffffff14; gap: 12px; }
+  .rp-dialog-footer button, .rp-dialog-footer a { min-height: 44px; }
+}
+
+@media (max-width: 360px) {
+  .rp-chat-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rp-chat-toolbar button { padding-inline: 3px; font-size: 10px; white-space: normal; line-height: 1.3; margin: 0; }
+  .rp-discover-banner { padding: 16px; }
+  .rp-banner-art { width: 32px; font-size: 38px; }
+  .rp-composer-controls { gap: 4px; }
+  .rp-composer-controls button { padding-inline: 8px; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .rp-message-actions { opacity: 1; }
+}
+
+/* Keep secondary chat controls usable above an on-screen keyboard. */
+.rp-modal-overlay, .rp-engine-overlay { top: var(--chat-top, 0px); bottom: auto; height: var(--chat-height, 100dvh); }
+.rp-memory-panel, .rp-compact-dialog { max-height: calc(var(--chat-height, 100dvh) - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.rp-memory-panel { min-height: 0; }
+.rp-memory-panel > div:first-child > button { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+.rp-memory-panel textarea { flex-shrink: 0; min-height: 120px; max-height: 35dvh; }
+.rp-memory-actions { flex-wrap: wrap; gap: 12px; flex-shrink: 0; }
+.rp-memory-actions > div { margin-left: auto; }
+.rp-memory-actions button, .rp-compact-dialog button, .rp-engine-overlay header button { min-height: 44px; }
+@media (max-width: 767px) {
+  .rp-modal-overlay { padding-inline: 12px; }
+  .rp-memory-panel, .rp-compact-dialog { padding: 20px; }
+  .rp-memory-actions > button { flex-basis: 100%; text-align: left; }
+}
