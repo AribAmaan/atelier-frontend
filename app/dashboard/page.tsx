@@ -191,51 +191,46 @@ export default function DashboardPage() {
     e.preventDefault();
     setError("");
     setSaving(true);
-    try {
-      const res = await apiFetch("/api/characters", {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          tagline,
-          personality,
-          backstory,
-          greeting,
-          avatarEmoji,
-          isExplicit,
-          roleplayNotes: isExplicit ? roleplayNotes : "",
-          avatarPrompt,
-          scenePromptTemplate,
-          examples,
-          tags,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || "Couldn't create that character.");
-        return;
-      }
-      setName("");
-      setTagline("");
-      setPersonality("");
-      setBackstory("");
-      setGreeting("");
-      setAvatarEmoji("🌸");
-      setIsExplicit(false);
-      setRoleplayNotes("");
-      setAvatarPrompt("");
-      setScenePromptTemplate("");
-      setExamples("[]");
-      setTags("[]");
-      setShowForm(false);
-      if (data.character?.id) {
-        router.push(`/characters/${data.character.id}/edit`);
-      } else {
-        loadCharacters();
-      }
-    } catch {
-      setError("Couldn't reach the server. Please try again.");
-    } finally {
-      setSaving(false);
+    const res = await apiFetch("/api/characters", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        tagline,
+        personality,
+        backstory,
+        greeting,
+        avatarEmoji,
+        isExplicit,
+        roleplayNotes: isExplicit ? roleplayNotes : "",
+        avatarPrompt,
+        scenePromptTemplate,
+        examples,
+        tags,
+      }),
+    });
+    setSaving(false);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(data.error || "Couldn't create that character.");
+      return;
+    }
+    setName("");
+    setTagline("");
+    setPersonality("");
+    setBackstory("");
+    setGreeting("");
+    setAvatarEmoji("🌸");
+    setIsExplicit(false);
+    setRoleplayNotes("");
+    setAvatarPrompt("");
+    setScenePromptTemplate("");
+    setExamples("[]");
+    setTags("[]");
+    setShowForm(false);
+    if (data.character?.id) {
+      router.push(`/characters/${data.character.id}/edit`);
+    } else {
+      loadCharacters();
     }
   }
 

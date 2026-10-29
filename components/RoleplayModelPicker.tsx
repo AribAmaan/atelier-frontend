@@ -175,24 +175,7 @@ export default function RoleplayModelPicker({
   }, [open, onClose]);
 
   const freeEngines = useMemo(() => ROLEPLAY_ENGINES.filter((e) => e.minTier === "free"), []);
-  const plusEngines = useMemo(() => ROLEPLAY_ENGINES.filter((e) => e.minTier === "plus"), []);
-  const ultraEngines = useMemo(() => ROLEPLAY_ENGINES.filter((e) => e.minTier === "ultra"), []);
-  const supremeEngines = useMemo(() => ROLEPLAY_ENGINES.filter((e) => e.minTier === "supreme"), []);
-
-  // Smart recommendation based on user preferences — one engine per tier now,
-  // so this just picks the tier whose spice/style pairing is the closest match.
-  const recommendedEngine = useMemo(() => {
-    if (!prefs.explicitMode) {
-      return plusEngines[0] || null;
-    }
-    if (prefs.spiceLevel === "spicy" && prefs.roleplayStyle === "narrative") {
-      return ultraEngines[0] || null;
-    }
-    if (prefs.spiceLevel === "explicit" && prefs.roleplayStyle === "intense") {
-      return supremeEngines[0] || null;
-    }
-    return ultraEngines[0] || null;
-  }, [prefs, plusEngines, ultraEngines, supremeEngines]);
+  const premiumEngines = useMemo(() => ROLEPLAY_ENGINES.filter((e) => e.minTier !== "free"), []);
 
   if (!open) return null;
 
@@ -236,8 +219,8 @@ export default function RoleplayModelPicker({
           <div className="mt-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-gold/10 border border-violet-400/25 px-3 py-2.5 flex items-start gap-2 text-xs text-parchment/90">
             <span className="text-base leading-none">💎</span>
             <div>
-              <p className="font-medium text-parchment mb-0.5">All engines included — free to use</p>
-              <p className="text-parchment/60">Higher badges = richer, more immersive experiences.</p>
+              <p className="font-medium text-parchment mb-0.5">Both engines are free during early access</p>
+              <p className="text-parchment/60">Replies are sized to the moment: short for quick messages, longer when the scene calls for it.</p>
             </div>
           </div>
         </header>
@@ -245,7 +228,7 @@ export default function RoleplayModelPicker({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-6">
           {engineId === "custom" && (
             <p className="text-xs text-parchment/50 px-1">
-              Custom mix active — pick a preset or use the sliders on any engine to fine-tune.
+              Custom mix active — pick Vanilla or Hazelnut to switch back to an engine.
             </p>
           )}
 
@@ -272,120 +255,26 @@ export default function RoleplayModelPicker({
 
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-medium text-parchment/45 uppercase tracking-wider">More Styles</h3>
+              <h3 className="text-xs font-medium text-parchment/45 uppercase tracking-wider">Premium</h3>
               <span className="text-[10px] text-rose/80 border border-rose/30 rounded-full px-2 py-0.5">Explicit</span>
             </div>
-
-            {/* Smart Recommendation */}
-            {engineId === "custom" ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[11px] font-medium text-gold uppercase tracking-wider">💡 Recommended for you</h4>
-                </div>
-                {recommendedEngine && (
-                  <div className="space-y-2">
-                    <EngineCard
-                      engine={recommendedEngine}
-                      selected={false}
-                      fineTuneOpen={fineTuneEngineId === recommendedEngine.id}
-                      onSelect={() => selectEngine(recommendedEngine)}
-                      onToggleFineTune={() => {
-                        selectEngine(recommendedEngine);
-                        setFineTuneEngineId((id) => (id === recommendedEngine.id ? null : recommendedEngine.id));
-                      }}
-                      prefs={prefs}
-                      onPatch={patchPrefs}
-                    />
-                    <p className="text-[10px] text-parchment/50 italic pl-1">
-                      Based on your preferences — {recommendedEngine.description.toLowerCase()}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Plus - Entry Level */}
-                {plusEngines.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-[11px] font-medium text-emerald-400/80 uppercase tracking-wider">Plus</h4>
-                      <span className="text-[10px] text-emerald-400/60">Balanced</span>
-                    </div>
-                    <div className="space-y-2">
-                      {plusEngines.map((engine) => (
-                        <EngineCard
-                          key={engine.id}
-                          engine={engine}
-                          selected={engineId === engine.id}
-                          fineTuneOpen={fineTuneEngineId === engine.id}
-                          onSelect={() => selectEngine(engine)}
-                          onToggleFineTune={() => {
-                            if (engineId !== engine.id) selectEngine(engine);
-                            setFineTuneEngineId((id) => (id === engine.id ? null : engine.id));
-                          }}
-                          prefs={prefs}
-                          onPatch={patchPrefs}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Ultra - Popular Choice */}
-                {ultraEngines.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-[11px] font-medium text-gold/80 uppercase tracking-wider">Ultra</h4>
-                      <span className="text-[10px] text-gold/60">⭐ Fan favorite</span>
-                    </div>
-                    <div className="space-y-2">
-                      {ultraEngines.map((engine) => (
-                        <EngineCard
-                          key={engine.id}
-                          engine={engine}
-                          selected={engineId === engine.id}
-                          fineTuneOpen={fineTuneEngineId === engine.id}
-                          onSelect={() => selectEngine(engine)}
-                          onToggleFineTune={() => {
-                            if (engineId !== engine.id) selectEngine(engine);
-                            setFineTuneEngineId((id) => (id === engine.id ? null : engine.id));
-                          }}
-                          prefs={prefs}
-                          onPatch={patchPrefs}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Supreme - Flagship */}
-                {supremeEngines.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-[11px] font-medium text-violet-300 uppercase tracking-wider">🏆 Supreme</h4>
-                      <span className="text-[10px] text-violet-300/80">The full experience</span>
-                    </div>
-                    <div className="space-y-2">
-                      {supremeEngines.map((engine) => (
-                        <EngineCard
-                          key={engine.id}
-                          engine={engine}
-                          selected={engineId === engine.id}
-                          fineTuneOpen={fineTuneEngineId === engine.id}
-                          onSelect={() => selectEngine(engine)}
-                          onToggleFineTune={() => {
-                            if (engineId !== engine.id) selectEngine(engine);
-                            setFineTuneEngineId((id) => (id === engine.id ? null : engine.id));
-                          }}
-                          prefs={prefs}
-                          onPatch={patchPrefs}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+            <div className="space-y-2">
+              {premiumEngines.map((engine) => (
+                <EngineCard
+                  key={engine.id}
+                  engine={engine}
+                  selected={engineId === engine.id}
+                  fineTuneOpen={fineTuneEngineId === engine.id}
+                  onSelect={() => selectEngine(engine)}
+                  onToggleFineTune={() => {
+                    if (engineId !== engine.id) selectEngine(engine);
+                    setFineTuneEngineId((id) => (id === engine.id ? null : engine.id));
+                  }}
+                  prefs={prefs}
+                  onPatch={patchPrefs}
+                />
+              ))}
+            </div>
           </section>
 
           {canSteerScene && (

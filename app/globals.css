@@ -216,18 +216,6 @@ body {
   pointer-events: none;
 }
 
-/* ===== Tier card glows ===== */
-
-.tier-card-glow-gold {
-  box-shadow: inset 0 1px 0 rgba(255, 220, 120, 0.25);
-}
-
-.tier-card-glow-rainbow {
-  background: linear-gradient(#18181f, #18181f) padding-box,
-    linear-gradient(135deg, #a855f7, #f472b6, #fbbf24) border-box;
-  border: 1px solid transparent;
-}
-
 /* ===== Stitched border (signature element) ===== */
 
 .stitched {

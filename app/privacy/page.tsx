@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy — Rolichat",
+  title: "Privacy Policy — RoliChat",
+  description: "Learn how RoliChat collects, uses, and protects your account and conversation data.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

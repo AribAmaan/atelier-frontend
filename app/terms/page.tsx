@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Service & Content Policy — Rolichat",
+  title: "Terms of Service & Content Policy — RoliChat",
+  description: "Read RoliChat's terms of service, age requirements, and content policy.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

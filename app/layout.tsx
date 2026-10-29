@@ -21,8 +21,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rolichat — your next story starts here",
-  description: "Meet memorable AI characters, direct your own scenes, and build stories shaped by your choices.",
+  metadataBase: new URL("https://rolichat.com"),
+  applicationName: "RoliChat",
+  title: "RoliChat — AI Character Chat & Roleplay",
+  description: "Meet AI characters, direct your own scenes, and build interactive stories shaped by your choices.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Rolichat",
+    title: "RoliChat",
   },
 };
 

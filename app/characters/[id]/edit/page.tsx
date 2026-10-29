@@ -29,8 +29,6 @@ type Character = {
 
 const EMOJI_CHOICES = ["🌸", "🦊", "🌙", "⚔️", "🕯️", "🐉", "☕", "🌊"];
 
-const NETWORK_ERROR = "Couldn't reach the server. Check your connection and try again.";
-
 export default function EditCharacterPage() {
   const { id } = useParams<{ id: string }>();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +61,6 @@ export default function EditCharacterPage() {
   const [bgGenerating, setBgGenerating] = useState(false);
   const [bgPrompt, setBgPrompt] = useState("");
   const [saved, setSaved] = useState(false);
-  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     apiFetch(`/api/characters/${id}`)
@@ -93,155 +90,87 @@ export default function EditCharacterPage() {
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setNotice("");
     setSaving(true);
     setSaved(false);
-    try {
-      const res = await apiFetch(`/api/characters/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          name,
-          tagline,
-          personality,
-          backstory,
-          greeting,
-          avatarEmoji,
-          isExplicit,
-          isPublic,
-          roleplayNotes: isExplicit ? roleplayNotes : "",
-          avatarPrompt,
-          scenePromptTemplate,
-          examples,
-          tags,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Couldn't save changes.");
-        return;
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch {
-      setError(NETWORK_ERROR);
-    } finally {
-      setSaving(false);
+    const res = await apiFetch(`/api/characters/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name,
+        tagline,
+        personality,
+        backstory,
+        greeting,
+        avatarEmoji,
+        isExplicit,
+        isPublic,
+        roleplayNotes: isExplicit ? roleplayNotes : "",
+        avatarPrompt,
+        scenePromptTemplate,
+        examples,
+        tags,
+      }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Couldn't save changes.");
+      return;
     }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const input = e.target;
-    const file = input.files?.[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setError("");
-    setNotice("");
     setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("avatar", file);
-      const res = await apiFetch(`/api/characters/${id}/avatar`, { method: "POST", body: form });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Upload failed.");
-        return;
-      }
-      const data = await res.json();
-      setAvatarUrl(data.character.avatarUrl);
-    } catch {
-      setError(NETWORK_ERROR);
-    } finally {
-      setUploading(false);
-      input.value = "";
+    const form = new FormData();
+    form.append("avatar", file);
+    const res = await apiFetch(`/api/characters/${id}/avatar`, { method: "POST", body: form });
+    setUploading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Upload failed.");
+      return;
     }
+    const data = await res.json();
+    setAvatarUrl(data.character.avatarUrl);
   }
 
   async function onBgUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const input = e.target;
-    const file = input.files?.[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setError("");
-    setNotice("");
     setBgUploading(true);
-    try {
-      const form = new FormData();
-      form.append("background", file);
-      const res = await apiFetch(`/api/characters/${id}/background`, { method: "POST", body: form });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Upload failed.");
-        return;
-      }
-      const data = await res.json();
-      setBgUrl(data.character.backgroundUrl);
-    } catch {
-      setError(NETWORK_ERROR);
-    } finally {
-      setBgUploading(false);
-      input.value = "";
+    const form = new FormData();
+    form.append("background", file);
+    const res = await apiFetch(`/api/characters/${id}/background`, { method: "POST", body: form });
+    setBgUploading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Upload failed.");
+      return;
     }
+    const data = await res.json();
+    setBgUrl(data.character.backgroundUrl);
   }
 
   async function onGenerate() {
     setError("");
-    setNotice("");
     setGenerating(true);
-    try {
-      const res = await apiFetch(`/api/characters/${id}/avatar/generate`, {
-        method: "POST",
-        body: JSON.stringify({ prompt: imagePrompt.trim() || undefined }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Generation failed.");
-        return;
-      }
-      const data = await res.json();
-      setAvatarUrl(data.character.avatarUrl);
-      if (data.imageGeneration?.isFallback) {
-        setNotice("The AI image generators were busy, so a simple placeholder was used. Try again later for a real portrait.");
-      }
-    } catch {
-      setError(NETWORK_ERROR);
-    } finally {
-      setGenerating(false);
+    const res = await apiFetch(`/api/characters/${id}/avatar/generate`, {
+      method: "POST",
+      body: JSON.stringify({ prompt: imagePrompt.trim() || undefined }),
+    });
+    setGenerating(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Generation failed.");
+      return;
     }
-  }
-
-  async function onBgGenerate() {
-    setError("");
-    setNotice("");
-    setBgGenerating(true);
-    try {
-      const res = await apiFetch(`/api/characters/${id}/background/generate`, {
-        method: "POST",
-        body: JSON.stringify({ prompt: bgPrompt.trim() || undefined }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Generation failed.");
-        return;
-      }
-      setBgUrl((await res.json()).character.backgroundUrl);
-    } catch {
-      setError(NETWORK_ERROR);
-    } finally {
-      setBgGenerating(false);
-    }
-  }
-
-  async function onBgRemove() {
-    setError("");
-    try {
-      const res = await apiFetch(`/api/characters/${id}/background`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Delete failed.");
-        return;
-      }
-      setBgUrl(null);
-    } catch {
-      setError(NETWORK_ERROR);
-    }
+    const data = await res.json();
+    setAvatarUrl(data.character.avatarUrl);
   }
 
   if (notFound) {
@@ -303,9 +232,6 @@ export default function EditCharacterPage() {
 
         {error && (
           <p className="mb-4 text-sm text-rose bg-rose/10 border border-rose/30 rounded px-3 py-2">{error}</p>
-        )}
-        {notice && (
-          <p className="mb-4 text-sm text-parchment/80 bg-gold/10 border border-gold/30 rounded px-3 py-2">{notice}</p>
         )}
         {saved && (
           <p className="mb-4 text-sm text-gold bg-gold/10 border border-gold/30 rounded px-3 py-2">Saved.</p>
@@ -413,7 +339,21 @@ export default function EditCharacterPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={onBgGenerate}
+                    onClick={async () => {
+                      setError("");
+                      setBgGenerating(true);
+                      const res = await apiFetch(`/api/characters/${id}/background/generate`, {
+                        method: "POST",
+                        body: JSON.stringify({ prompt: bgPrompt.trim() || undefined }),
+                      });
+                      setBgGenerating(false);
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        setError(data.error || "Generation failed.");
+                        return;
+                      }
+                      setBgUrl((await res.json()).character.backgroundUrl);
+                    }}
                     disabled={bgGenerating}
                     className="text-sm border border-parchment/30 px-4 py-1.5 rounded-full hover:border-gold focus-ring disabled:opacity-50"
                   >
@@ -422,7 +362,16 @@ export default function EditCharacterPage() {
                   {bgUrl && (
                     <button
                       type="button"
-                      onClick={onBgRemove}
+                      onClick={async () => {
+                        setError("");
+                        const res = await apiFetch(`/api/characters/${id}/background`, { method: "DELETE" });
+                        if (!res.ok) {
+                          const data = await res.json().catch(() => ({}));
+                          setError(data.error || "Delete failed.");
+                          return;
+                        }
+                        setBgUrl(null);
+                      }}
                       className="text-sm text-rose/80 hover:text-rose focus-ring"
                     >
                       Remove

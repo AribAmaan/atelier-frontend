@@ -1,6 +1,5 @@
 "use client";
 
-import BirthdateField from "@/components/BirthdateField";
 import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
@@ -73,8 +72,15 @@ export function GoogleCompleteProfile({
       />
 
       <label className="block text-sm mb-1 text-parchment/70">Date of birth</label>
-      <BirthdateField value={birthdate} onChange={setBirthdate} />
-      <p className="text-xs text-parchment/50 mt-2 mb-4">
+      <input
+        type="date"
+        required
+        value={birthdate}
+        onChange={(e) => setBirthdate(e.target.value)}
+        max={new Date().toISOString().slice(0, 10)}
+        className="w-full mb-2 rounded-lg bg-plum-deep border border-parchment/20 px-3 py-2 focus-ring"
+      />
+      <p className="text-xs text-parchment/50 mb-4">
         Rolichat includes user-created mature content and is for adults only. You must be 18 or older.
       </p>
 

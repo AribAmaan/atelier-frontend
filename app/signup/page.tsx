@@ -1,6 +1,5 @@
 "use client";
 
-import BirthdateField from "@/components/BirthdateField";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -173,8 +172,15 @@ export default function SignupPage() {
         <p className="text-xs text-parchment/40 mb-4 ml-1">At least 8 characters.</p>
 
         <label className="block text-sm mb-1.5 text-parchment/60">Date of birth</label>
-        <BirthdateField value={birthdate} onChange={setBirthdate} />
-        <p className="text-xs text-parchment/40 mt-2 mb-4 ml-1">
+        <input
+          type="date"
+          required
+          value={birthdate}
+          onChange={(e) => setBirthdate(e.target.value)}
+          max={new Date().toISOString().slice(0, 10)}
+          className="w-full mb-2 rounded-xl bg-plum-deep/80 border border-white/10 px-4 py-2.5 focus-ring [color-scheme:dark]"
+        />
+        <p className="text-xs text-parchment/40 mb-4 ml-1">
           Rolichat includes user-created mature content and is for adults only. You must be 18 or older.
         </p>
 

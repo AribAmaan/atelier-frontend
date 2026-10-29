@@ -34,14 +34,12 @@ export default function AvatarGenerateModal({
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [preview, setPreview] = useState<string | null | undefined>(currentAvatarUrl);
 
   useEffect(() => {
     if (open) {
       setPreview(currentAvatarUrl);
       setError("");
-      setNotice("");
       setPrompt("");
     }
   }, [open, currentAvatarUrl]);
@@ -61,55 +59,39 @@ export default function AvatarGenerateModal({
     const file = e.target.files?.[0];
     if (!file) return;
     setError("");
-    setNotice("");
     setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("avatar", file);
-      const res = await apiFetch(`/api/characters/${characterId}/avatar`, { method: "POST", body: form });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Upload failed.");
-        return;
-      }
-      const data = await res.json();
-      setPreview(data.character.avatarUrl);
-      onUpdated(data.character.avatarUrl);
-    } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
-    } finally {
-      // Always release the button and reset the input, even if the request
-      // threw, so the same file can be chosen again.
-      setUploading(false);
+    const form = new FormData();
+    form.append("avatar", file);
+    const res = await apiFetch(`/api/characters/${characterId}/avatar`, { method: "POST", body: form });
+    setUploading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Upload failed.");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
+    const data = await res.json();
+    setPreview(data.character.avatarUrl);
+    onUpdated(data.character.avatarUrl);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function onGenerate() {
     setError("");
-    setNotice("");
     setGenerating(true);
-    try {
-      const res = await apiFetch(`/api/characters/${characterId}/avatar/generate`, {
-        method: "POST",
-        body: JSON.stringify({ prompt: prompt.trim() || undefined }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Generation failed. Try again in a moment.");
-        return;
-      }
-      const data = await res.json();
-      setPreview(data.character.avatarUrl);
-      onUpdated(data.character.avatarUrl);
-      if (data.imageGeneration?.isFallback) {
-        setNotice("The AI image generators were busy, so a simple placeholder was used. Try again later for a real portrait.");
-      }
-    } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
-    } finally {
-      setGenerating(false);
+    const res = await apiFetch(`/api/characters/${characterId}/avatar/generate`, {
+      method: "POST",
+      body: JSON.stringify({ prompt: prompt.trim() || undefined }),
+    });
+    setGenerating(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Generation failed. Try again in a moment.");
+      return;
     }
+    const data = await res.json();
+    setPreview(data.character.avatarUrl);
+    onUpdated(data.character.avatarUrl);
   }
 
   const busy = uploading || generating;
@@ -138,9 +120,6 @@ export default function AvatarGenerateModal({
 
         {error && (
           <p className="mb-3 text-sm text-rose bg-rose/10 border border-rose/30 rounded px-3 py-2">{error}</p>
-        )}
-        {notice && (
-          <p className="mb-3 text-sm text-parchment/80 bg-gold/10 border border-gold/30 rounded px-3 py-2">{notice}</p>
         )}
 
         <div className="flex gap-2 mb-3">
