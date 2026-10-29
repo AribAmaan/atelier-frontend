@@ -1,3 +1,5 @@
+> **Superseded.** This note describes the old four-engine setup and its word ranges. Reply length now follows the conversation and there are two engines; see `FRONTEND_TWO_ENGINES.md`.
+
 # Engine-aware, complete replies
 
 ## Deploy

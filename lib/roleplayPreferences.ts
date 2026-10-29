@@ -25,7 +25,7 @@ function storageKey(characterId: string) {
 
 function defaultPrefs(characterIsExplicit: boolean): RoleplayPreferences {
   const engine = ROLEPLAY_ENGINES.find((e) =>
-    characterIsExplicit ? e.id === "strawberry" : e.id === "vanilla"
+    characterIsExplicit ? e.id === "choco_hazelnut" : e.id === "strawberry"
   );
   if (!engine) {
     return { ...DEFAULTS, explicitMode: characterIsExplicit, engineId: "custom" };
@@ -94,5 +94,5 @@ export const SCENE_STEERS: { label: string; directive: string }[] = [
   { label: "Turn up the heat", directive: "Escalate tension and intimacy in this scene; stay in character." },
   { label: "Slow down", directive: "Pull back to teasing, emotional intimacy, and anticipation rather than rushing." },
   { label: "You take the lead", directive: "Drive the scene forward with bold initiative while checking in with the user." },
-  { label: "More detail", directive: "Use richer sensory description and longer, immersive replies." },
+  { label: "More detail", directive: "Use richer sensory description and more specific detail." },
 ];

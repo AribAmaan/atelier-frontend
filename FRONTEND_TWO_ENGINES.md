@@ -1,3 +1,5 @@
+> **Names superseded.** The engines are now Strawberry (free) and Choco Hazelnut (premium); see `FRONTEND_ENGINE_RENAME.md`. Where this note says Vanilla or Hazelnut, read Strawberry or Choco Hazelnut. Its claim that replies are sized to the user's message applies to a different backend; this backend fixes each engine's length.
+
 # Frontend upgrade: two engines, context-sized replies, guest speakers
 
 Pairs with `atelier-backend-context-length.zip`. Deploy the backend first (it still accepts the old engine ids), then this frontend.

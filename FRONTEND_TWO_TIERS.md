@@ -17,6 +17,6 @@ The Plus price is 200 (INR per month) in `lib/premium.ts` and `MEMBERSHIP_MONTHL
 Quarterly (x2.85) and yearly (x10) multipliers are unchanged on both sides.
 
 ## Checks
-`tsc --noEmit` passes. Executed against the compiled code: tiers are exactly `free@0, plus@200`; `strawberry` and `chocolate` ids resolve to
-`hazelnut`; unknown ids resolve to nothing. No `ultra`, `supreme`, `tier-card-glow` or four-tier layout remains in `app`, `components` or `lib`.
+`tsc --noEmit` passes. Executed against the compiled code: tiers are exactly `free@0, plus@200`; (at the time) `strawberry` and `chocolate` ids resolved to
+`hazelnut`; ids are now strawberry / choco_hazelnut, see `FRONTEND_ENGINE_RENAME.md`; unknown ids resolve to nothing. No `ultra`, `supreme`, `tier-card-glow` or four-tier layout remains in `app`, `components` or `lib`.
 A full `next build` was not run (the sandbox blocks Google Fonts); run it on Netlify as usual.
