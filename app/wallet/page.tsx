@@ -76,7 +76,7 @@ export default function WalletPage() {
               className="rounded-2xl promo-banner border border-gold/20 p-6 flex flex-col justify-center focus-ring"
             >
               <p className="text-xs uppercase tracking-wider text-gold/90 mb-1">Join Rolichat+ membership</p>
-              <p className="text-lg font-display">Two engines · free Vanilla and premium Hazelnut</p>
+              <p className="text-lg font-display">Four distinct engines · different conversation styles</p>
               <PremiumLockBadge />
             </Link>
           </div>

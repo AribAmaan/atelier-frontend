@@ -1,7 +1,7 @@
 "use client";
 
 /// <reference types="react" />
-import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode, type FormEvent, type KeyboardEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, resolveMediaUrl } from "@/lib/api";
@@ -27,7 +27,6 @@ import {
   resolveEngineId,
   type RoleplayEngineId,
 } from "@/lib/roleplayEngines";
-import { computeSpeakers } from "@/lib/speaker";
 import { MEMBERSHIP_TIERS } from "@/lib/premium";
 
 type Character = {
@@ -322,9 +321,7 @@ export default function ChatPage() {
     setRoleplayPrefs({ ...prefs, engineId });
   }
 
-  const displayEngineId = resolveEngineId(roleplayPrefs, roleplayPrefs.engineId);
-  // Replies where another of the user's characters took over (display only; stored text is unchanged).
-  const speakers = useMemo(() => computeSpeakers(messages, character?.name ?? ""), [messages, character?.name]);
+  const displayEngineId = roleplayPrefs.engineId ?? resolveEngineId(roleplayPrefs);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = scrollRef.current;
@@ -726,11 +723,10 @@ export default function ChatPage() {
 
   function exportChat() {
     if (!character || messages.length === 0) return;
-    const lines = messages.map((m, i) => {
+    const lines = messages.map((m) => {
       const time = m.createdAt ? `[${formatTime(m.createdAt)}] ` : "";
-      const guest = speakers[i];
-      const role = m.role === "user" ? story.personaName || currentUser?.displayName || "You" : guest?.speaker ?? character.name;
-      return `${time}${role}: ${guest ? guest.text : m.content}`;
+      const role = m.role === "user" ? story.personaName || currentUser?.displayName || "You" : character.name;
+      return `${time}${role}: ${m.content}`;
     });
     const heading = [`Rolichat — ${character.name}`, `Exported ${new Date().toLocaleString()}`, story.scene ? `Scene: ${story.scene}` : "", ""].filter(Boolean).join("\n");
     const blob = new Blob([heading + "\n\n" + lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
@@ -1162,20 +1158,11 @@ export default function ChatPage() {
               const msgReactions = reactions.get(m.id) || [];
 
               const userInitial = (story.personaName || currentUser?.displayName || "You").charAt(0).toUpperCase();
-              const guest = m.role === "assistant" ? speakers[i] : null;
 
               return (
                 <div data-role={m.role} id={`message-${m.id}`} key={m.id} className={`rp-message group message-slide-in flex gap-2 sm:gap-3 ${m.role === "user" ? "flex-row-reverse" : ""} ${searchOpen && searchText.trim() && m.content.toLowerCase().includes(searchText.toLowerCase().trim()) ? "rp-search-match" : ""}`}>
                   {/* Avatar */}
-                  {guest ? (
-                    <div
-                      className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full overflow-hidden ring-1 ring-white/10 flex items-center justify-center text-xs font-semibold text-parchment/90"
-                      style={{ backgroundColor: `${character.accentColor}30` }}
-                      title={`${guest.speaker} (guest in this chat)`}
-                    >
-                      {guest.speaker.charAt(0).toUpperCase()}
-                    </div>
-                  ) : m.role === "assistant" ? (
+                  {m.role === "assistant" ? (
                     <div
                       className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full overflow-hidden cursor-pointer ring-1 ring-white/10"
                       style={{ backgroundColor: `${character.accentColor}30` }}
@@ -1198,10 +1185,10 @@ export default function ChatPage() {
                     {/* Name + badge + time */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-sm text-parchment/90 truncate">
-                        {m.role === "assistant" ? (guest?.speaker ?? character.name) : (story.personaName || currentUser?.displayName || "You")}
+                        {m.role === "assistant" ? character.name : (story.personaName || currentUser?.displayName || "You")}
                       </span>
                       {m.role === "assistant" && (
-                        <span className="text-[9px] text-parchment/40 shrink-0">{guest ? "guest · AI" : "AI"}</span>
+                        <span className="text-[9px] text-parchment/40 shrink-0">AI</span>
                       )}
                       {m.createdAt && (
                         <span className="text-[10px] text-parchment/30">{formatTime(m.createdAt)}</span>
@@ -1264,7 +1251,7 @@ export default function ChatPage() {
                             <span className="typing-indicator-dot" />
                           </div>
                         ) : (
-                          renderMessageContent(guest ? guest.text : m.content)
+                          renderMessageContent(m.content)
                         )}
                       </div>
                     )}

@@ -9,13 +9,7 @@ export const SPARK_CURRENCY = "Sparks";
 
 export type BillingCycle = "monthly" | "quarterly" | "yearly";
 
-/**
- * Only two tiers exist: "free" and "plus" (the single paid plan). Ultra and
- * Supreme were retired; the backend still treats old accounts stored as
- * ultra/supreme as paid (see normalizeMembershipTier in providers/engines.ts),
- * so nothing here needs to know about them.
- */
-export type MembershipTierId = "free" | "plus";
+export type MembershipTierId = "free" | "plus" | "ultra" | "supreme";
 
 export type MembershipTier = {
   id: MembershipTierId;
@@ -23,7 +17,7 @@ export type MembershipTier = {
   tagline: string;
   /** Display price in INR, matching the backend's membershipAmountInPaise. */
   monthlyPriceInr: number;
-  accent: "neutral" | "silver";
+  accent: "neutral" | "silver" | "gold" | "rainbow";
   features: string[];
   highlight?: boolean;
 };
@@ -45,15 +39,40 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: "plus",
     name: "Plus",
-    tagline: "The premium Hazelnut engine for deeper roleplay.",
-    // Keep equal to MEMBERSHIP_MONTHLY_PAISE in the backend's payments/razorpay.ts (20000 paise).
-    monthlyPriceInr: 200,
+    tagline: "A more attentive engine with more conversation context.",
+    monthlyPriceInr: 1099,
     accent: "silver",
+    features: [
+      "Strawberry roleplay engine",
+      "More recent messages in context than Vanilla",
+      "A distinct, attentive conversation style",
+    ],
+  },
+  {
+    id: "ultra",
+    name: "Ultra",
+    tagline: "For daily deep roleplay and richer scenes.",
+    monthlyPriceInr: 1699,
+    accent: "gold",
     highlight: true,
     features: [
-      "Hazelnut roleplay engine",
-      "Longer memory: more recent messages kept in context, with summaries of older ones",
-      "Stronger character consistency and initiative",
+      "Everything in Plus",
+      "Chocolate roleplay engine",
+      "More recent messages in context than Strawberry",
+      "Narrative-focused conversation style",
+    ],
+  },
+  {
+    id: "supreme",
+    name: "Supreme",
+    tagline: "Maximum control and the flagship engine.",
+    monthlyPriceInr: 4199,
+    accent: "rainbow",
+    features: [
+      "Everything in Ultra",
+      "Hazelnut flagship engine",
+      "Flagship character consistency and initiative",
+      "Conversation summaries for older context",
     ],
   },
 ];

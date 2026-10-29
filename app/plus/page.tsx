@@ -44,7 +44,7 @@ export default function PlusPage() {
             <span className="text-4xl block mb-3">♛</span>
             <h1 className="font-display text-3xl md:text-4xl mb-2 gradient-text">Get unlimited access on Rolichat</h1>
             <p className="text-sm text-parchment/50">
-              Plus unlocks the premium Hazelnut engine and longer memory — billing is not active yet.
+              Higher tiers unlock more premium engines and memory — billing is not active yet.
             </p>
             <p className="text-xs text-gold/80 mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
               <span className="w-1.5 h-1.5 rounded-full bg-gold animate-sparkle" />
@@ -76,11 +76,16 @@ export default function PlusPage() {
             ))}
           </div>}
 
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-4 max-w-6xl mx-auto">
             {MEMBERSHIP_TIERS.map((tier) => {
               const price =
                 tier.monthlyPriceInr === 0 ? 0 : tier.monthlyPriceInr * cycleMultiplier(cycle);
-              const cardClass = "border-white/10";
+              const cardClass =
+                tier.accent === "rainbow"
+                  ? "tier-card-glow-rainbow"
+                  : tier.accent === "gold"
+                    ? "tier-card-glow-gold border-amber-500/30"
+                    : "border-white/10";
 
               return (
                 <div
@@ -123,7 +128,7 @@ export default function PlusPage() {
                     </button>
                   ) : (
                     <PremiumActionButton
-                      variant="silver"
+                      variant={tier.accent === "gold" ? "gold" : tier.accent === "rainbow" ? "rainbow" : "silver"}
                       className="w-full text-sm py-2.5"
                       onClick={() => onSubscribe(tier.id as Exclude<MembershipTierId, "free">)}
                       disabled={subscribingId === tier.id}
@@ -137,7 +142,7 @@ export default function PlusPage() {
           </div>
 
           <p className="text-center text-xs text-parchment/35 mt-10 max-w-lg mx-auto">
-            Subscriptions will connect to payment later. Until then, both engines and all chats remain free. See{" "}
+            Subscriptions will connect to payment later. Until then, all engines and chats remain free. See{" "}
             <Link href="/terms" className="text-gold hover:text-gold/80 transition-colors">
               Terms
             </Link>

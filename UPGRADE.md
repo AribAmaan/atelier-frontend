@@ -1,5 +1,3 @@
-> **Latest patch: two engines, context-sized replies, guest speakers.** See `FRONTEND_TWO_ENGINES.md`. Deploy the matching backend first, then this frontend.
-
 > **Latest patch: transparent vector logo and brand styling.** See `LOGO_UPDATE.md`. Deploy the frontend only. Earlier mobile improvements are included.
 
 > **Latest patch: mobile frontend fixes.** See `MOBILE_FIXES.md`. For this patch, redeploy the frontend only; no backend or database changes are required. The original Story Edition release notes and first-time installation instructions follow.

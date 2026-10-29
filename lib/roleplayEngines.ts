@@ -3,34 +3,19 @@ import type { MembershipTierId } from "./premium";
 
 /**
  * Mirrors the backend's ROLEPLAY_ENGINES (src/lib/providers/engines.ts) —
- * two engines: Vanilla (free) and Hazelnut (paid), down from four (and
- * originally nine). Keep id / minTier / spiceLevel / roleplayStyle in
- * lockstep with the backend; everything else here (name, emoji, description,
- * badge) is frontend-only display dressing.
+ * four engines, one per membership tier, down from the previous nine.
+ * Keep id / minTier / spiceLevel / roleplayStyle in lockstep with the
+ * backend; everything else here (name, emoji, description, badge) is
+ * frontend-only display dressing.
  *
- * Neither engine has a reply-length setting. Reply length follows the
- * conversation (the backend sizes each reply to the user's message), so the
- * descriptions below describe voice and memory, not length.
- *
- * NOTE: engineId is the quality tier sent to the backend. Retired ids
- * ("strawberry", "chocolate") still appear in saved browser preferences from
- * older versions; they are migrated to "hazelnut", exactly like the backend's
- * own alias, so nobody silently drops back to the free engine.
+ * NOTE: engineId is the intelligence/quality tier sent to the backend.
+ * spiceLevel/roleplayStyle are layered as per-request overrides (the
+ * backend honors them as fine-tune without dropping the engine tier),
+ * so prefsMatchEngine must NOT require them to match. Requiring a match
+ * is what used to flip every legacy/customized user to "custom" (manual,
+ * intelligence 5) on reload.
  */
-export type RoleplayEngineId = "vanilla" | "hazelnut" | "custom";
-
-/** Engine ids retired in the two-engine redesign, mapped to their replacement. */
-const LEGACY_ENGINE_IDS: Record<string, Exclude<RoleplayEngineId, "custom">> = {
-  strawberry: "hazelnut",
-  chocolate: "hazelnut",
-};
-
-/** Turns any stored/received engine id into a current one (or undefined if unknown). */
-export function normalizeEngineId(id: unknown): RoleplayEngineId | undefined {
-  if (typeof id !== "string") return undefined;
-  if (Object.prototype.hasOwnProperty.call(LEGACY_ENGINE_IDS, id)) return LEGACY_ENGINE_IDS[id];
-  return id === "vanilla" || id === "hazelnut" || id === "custom" ? id : undefined;
-}
+export type RoleplayEngineId = "vanilla" | "strawberry" | "chocolate" | "hazelnut" | "custom";
 
 export type RoleplayEngine = {
   id: Exclude<RoleplayEngineId, "custom">;
@@ -57,49 +42,74 @@ export const ROLEPLAY_ENGINES: RoleplayEngine[] = [
     id: "vanilla",
     name: "Vanilla",
     emoji: "🙂",
-    badge: 4,
-    outcomeLabel: "Natural & quick",
-    description: "Warm and natural, like believable early texts. It answers what you actually said, makes small character-consistent choices, and replies as briefly or as fully as the moment needs.",
+    badge: 3,
+    outcomeLabel: "Fast & casual",
+    description: "Warm and immediate, like believable early texts. It answers the strongest cue directly and keeps the exchange short, with an action only when it changes the moment.",
     minTier: "free",
     spiceLevel: "explicit",
+    roleplayStyle: "dialogue",
+  },
+  {
+    id: "strawberry",
+    name: "Strawberry",
+    emoji: "🍓",
+    badge: 6,
+    outcomeLabel: "Emotional & present",
+    tag: "Popular",
+    description: "Attentive and natural. It carries the mood forward, notices relevant hesitations or callbacks, and makes small, character-consistent choices instead of simply agreeing.",
+    minTier: "plus",
+    spiceLevel: "explicit",
     roleplayStyle: "balanced",
+  },
+  {
+    id: "chocolate",
+    name: "Chocolate",
+    emoji: "🍫",
+    badge: 8,
+    outcomeLabel: "Deep & layered",
+    tag: "Best Seller",
+    description: "Deeply grounded in the shared scene. It tracks relationship shifts and unresolved threads, uses exact earlier details when they matter, and lets subtext or silence have room.",
+    minTier: "ultra",
+    spiceLevel: "explicit",
+    roleplayStyle: "narrative",
   },
   {
     id: "hazelnut",
     name: "Hazelnut",
     emoji: "🌰",
     badge: 10,
-    outcomeLabel: "Deep & alive",
-    tag: "Premium",
-    description: "Specific, emotionally coherent, and independent. It remembers further back, holds history, subtext, and boundaries together, and takes initiative without forcing drama. Replies grow only when the scene calls for it.",
-    minTier: "plus",
+    outcomeLabel: "Fully alive",
+    tag: "Ultimate Experience",
+    description: "Specific, emotionally coherent, and independent. It holds history, subtext, uncertainty, and boundaries together without forcing random conflict or fake misunderstandings.",
+    minTier: "supreme",
     spiceLevel: "explicit",
     roleplayStyle: "intense",
   },
 ];
 
-export function engineById(id: RoleplayEngineId | string): RoleplayEngine | null {
-  const normalized = normalizeEngineId(id);
-  if (!normalized || normalized === "custom") return null;
-  return ROLEPLAY_ENGINES.find((e) => e.id === normalized) ?? null;
+export function engineById(id: RoleplayEngineId): RoleplayEngine | null {
+  if (id === "custom") return null;
+  return ROLEPLAY_ENGINES.find((e) => e.id === id) ?? null;
 }
 
 export function prefsMatchEngine(prefs: RoleplayPreferences, engine: RoleplayEngine): boolean {
-  // engineId alone selects the engine. spiceLevel/roleplayStyle are sent as
-  // per-request fine-tune values, but they must never force a "custom"
-  // (manual, intelligence 5) downgrade here. Note: with an engine selected the
-  // backend currently uses the engine's own heat/style.
+  // engineId alone selects the intelligence tier. spiceLevel/roleplayStyle
+  // are per-request fine-tune overrides layered over that tier (the backend
+  // honors them without dropping intelligence), so they must never force a
+  // "custom" (manual, intelligence 5) downgrade here.
   void prefs;
   void engine;
   return true;
 }
 
-export function resolveEngineId(prefs: RoleplayPreferences, storedId?: RoleplayEngineId | string): RoleplayEngineId {
-  // Stored engineId is the source of truth for the engine. Retired ids
-  // (strawberry, chocolate) migrate to hazelnut; prefs without a usable one
-  // default to vanilla (the free baseline).
-  const eng = engineById(storedId ?? "");
-  if (eng) return eng.id;
+export function resolveEngineId(prefs: RoleplayPreferences, storedId?: RoleplayEngineId): RoleplayEngineId {
+  // Stored engineId is the source of truth for the intelligence tier.
+  // Legacy prefs without one default to vanilla (free tier baseline),
+  // matching the backend's manual-fallback behavior for unknown ids.
+  if (storedId && storedId !== "custom") {
+    const eng = engineById(storedId);
+    if (eng) return storedId;
+  }
   void prefs;
   return "vanilla";
 }
